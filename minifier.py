@@ -43,8 +43,7 @@ class Minifier(object):
         self._numerrors = 0
         self._numwarnings = 0
         self._configsections = []
-        self._jslintfile = None
-        self._use_wscript = (platform.system() == 'Windows')
+        self._jslintprocargs = None
 
     def _init_parser(self):
         u = '%prog [options]'
@@ -106,6 +105,8 @@ output directories."""
                      metavar='OPTS')
         g.add_option('--force', dest='force', default=False, action='store_true',
                      help='force minify even if files are up to date')
+        g.add_option('--rhino', dest='rhino', default=False, action='store_true',
+                     help='always use rhino, even if wscript or node is available')
 
         p.add_option_group(g)
 
@@ -173,14 +174,33 @@ output directories."""
             self.err("Can't find YUI in %r (use --yui if needed)" % mypath)
 
         if not self.opts.nolint:
-            self._jslintfile = self.filter_by_re(mypath, self.jslint_re)
-            if not self._jslintfile:
+            jslintfile = self.filter_by_re(mypath, self.jslint_re)
+            if not jslintfile:
                 self.err("Can't find jslint in %r" % mypath)
 
-            if not self._use_wscript:
+            if not self.opts.rhino:
+                if platform.system == 'Windows':
+                    # Prefer Windows Script Host unless they forced rhino.
+                    # Windows Script Host has two versions, wscript.exe which pops up
+                    # a window and cscript.exe which does not.
+                    self._jslintprocargs = ["cscript.exe", "//I", "//Nologo", jslintfile]
+                else:
+                    # Not windows, prefer node unless they forced rhino.
+                    # Check to see if node is in the path.
+                    fnull = open(os.devnull, 'w')
+                    try:
+                        subprocess.check_call(['node', '--help'], stdout=fnull, stderr=fnull)
+                        self._jslintprocargs = ["node", jslintfile]
+                    except:
+                        self.displayinfo("Node.js not found in path, falling back to rhino.")
+                    finally:
+                        fnull.close()
+            if not self._jslintprocargs:
+                # Not using an alternative, use rhino.
                 self._rhinofile = self.filter_by_re(mypath, self.rhino_re)
                 if not self._rhinofile:
                     self.err("Can't find js.jar (rhino) in %r" % mypath)
+                self._jslintprocargs = ["java", "-jar", self._rhinofile, jslintfile]
 
     token_re = re.compile(r'\S+|"(?:[^"\\]|\\.)*"')
     def splitsubargs(self, s):
@@ -472,15 +492,9 @@ output directories."""
         if lintopts:
             javascript += " --options " + lintopts
 
-        procargs = None
-        if self._use_wscript:
-            # Windows Script Host has two versions, wscript.exe which pops up
-            # a window and cscript.exe which does not.
-            procargs = ["cscript.exe", "//I", "//Nologo", self._jslintfile]
-        else:
-            procargs = ["java", "-jar", self._rhinofile, self._jslintfile]
         try:
-            proc = subprocess.Popen(procargs, -1, None, subprocess.PIPE,
+            self.displayinfo("executing jslint: " + " ".join(self._jslintprocargs))
+            proc = subprocess.Popen(self._jslintprocargs, -1, None, subprocess.PIPE,
                 subprocess.PIPE, subprocess.PIPE)
             proc_output = proc.communicate(javascript)
         except Exception as e:
@@ -493,7 +507,7 @@ output directories."""
         if (proc.returncode != 0) and (proc.returncode != 1):
             self.displayerror(
                 message="JsLint (via Rhino) had non-zero exit code: " +
-                str(proc.returncode) + "\n    " + str(procargs) +
+                str(proc.returncode) + "\n    " + str(self._jslintprocargs) +
                 "\n    output: \n\n" + str(proc_output), code=proc.returncode)
             sys.exit(-19)
         retval = []
