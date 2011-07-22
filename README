@@ -1,0 +1,12 @@
+The Azavea Minifier combines JSLinting, merging multiple files, and minifying via
+the YUI compressor all into one simple and configurable build step.
+
+It can merge multiple JavaScript files into one, or multiple CSS files into one,
+and it will move all referenced images from the CSS files into appropriate locations
+(since CSS image locations are always relative to the CSS file's location).
+
+The minifier is intended to be run as part of a build process, so it checks timestamps
+on all input files and will only re-minify the files that have changed.
+
+Run minifier.py with no parameters for a description of the command line options and
+the config file format.
