@@ -179,7 +179,7 @@ output directories."""
                 self.err("Can't find jslint in %r" % mypath)
 
             if not self.opts.rhino:
-                if platform.system == 'Windows':
+                if platform.system() == 'Windows':
                     # Prefer Windows Script Host unless they forced rhino.
                     # Windows Script Host has two versions, wscript.exe which pops up
                     # a window and cscript.exe which does not.
