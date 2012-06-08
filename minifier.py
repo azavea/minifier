@@ -511,9 +511,13 @@ output directories."""
                 "\n    output: \n\n" + str(proc_output), code=proc.returncode)
             sys.exit(-19)
         retval = []
-        for complaint in proc_output[0].split("Lint at "):
-            if len(complaint.strip()):
-                retval.append(JsLintComplaint(complaint))
+        # differences between the javascript environment and system will cause 
+        # lint errors to be placed in either the 0 or 1 index of the proc_output
+        # tuple.  To be sure they are all included, check all elements for lint
+        for output in proc_output:
+            for complaint in output.split("Lint at "):
+                if len(complaint.strip()):
+                    retval.append(JsLintComplaint(complaint))
         return retval
 
     def extractpaths(self, cssfile, contents):
