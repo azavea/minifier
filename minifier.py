@@ -798,17 +798,17 @@ output directories."""
             # Since this recursively does subdirs, need to make sure
             # they exist as we go.
             self.ensuredirexists(todir + os.sep + "junk.file")
-            for f in os.listdir(fromdir):
-                if os.path.isfile(os.path.join(thedir, f)):
-                    shutil.copyfile(f, todir + f[len(fromdir):])
+            for x in os.listdir(fromdir):
+                fd = os.path.join(fromdir, x)
+                if os.path.isfile(fd):
+                    shutil.copyfile(fd, os.path.join(todir, x))
                     retval += 1
-            for d in os.listdir(fromdir):
-                if os.path.isdir(os.path.join(thedir, d)):
+                elif os.path.isdir(fd):
                     # Ignore any svn or git dirs.
-                    if re.match("([\._][Ss][Vv][Nn]|\.git)",
-                                os.path.basename(d)):
+                    if not re.match("([\._][Ss][Vv][Nn]|\.git)",
+                                os.path.basename(x)):
                         # Add the number of files copied.
-                        retval += self.copydir(d, todir + d[len(fromdir):])
+                        retval += self.copydir(fd, os.path.join(todir, x))
                         # Add one more for the directory itself.
                         retval += 1
             return retval
