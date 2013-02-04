@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
-# By Jeff Adams
-# Copyright (c) 2011 Azavea, Inc.
+# By Jeff Adams, David Zwarg
+# Copyright (c) 2011-2013 Azavea, Inc.
 # 
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -321,7 +321,7 @@ output directories."""
                 # It's a directory, copy all its contents.
                 if (os.path.isdir(inpath)):
                     numcopied = self.copydir(inpath, outdir)
-                    self.displayinfo("    " + numcopied + " files/folders copied.")
+                    self.displayinfo("    %d files/folders copied." % numcopied)
                 elif (os.path.isfile(inpath)):
                     shutil.copyfile(inpath,
                                     os.path.join(outdir,
